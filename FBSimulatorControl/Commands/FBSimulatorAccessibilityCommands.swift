@@ -116,6 +116,13 @@ public final class FBSimulatorAccessibilityCommands: NSObject, AsyncAccessibilit
       throw FBAccessibilityError.accessibilityUnavailable
     }
     try FBSimulatorControlFrameworkLoader.accessibilityFrameworks.loadPrivateFrameworks(simulator.logger)
+    if FBXcodeConfiguration.xcodeVersion.majorVersion >= 27 {
+      try FBSimulatorControlFrameworkLoader.bootstrapAccessibility(
+        forSimulatorDevice: simulator.device,
+        timeout: 5,
+        logger: simulator.logger
+      )
+    }
   }
 
   // Returns an FBAccessibilityElement wrapping the platform element for the given request.
