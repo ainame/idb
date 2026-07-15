@@ -9,6 +9,40 @@
 import XCTest
 
 final class FBXcodeDirectoryTests: XCTestCase {
+  func testResolveUsesProcessDeveloperDirectoryEnvironment() throws {
+    guard let directory = ProcessInfo.processInfo.environment["DEVELOPER_DIR"] else {
+      throw XCTSkip("DEVELOPER_DIR is not set")
+    }
+
+    XCTAssertEqual(
+      try FBXcodeDirectory.resolveDeveloperDirectory(),
+      (directory as NSString).resolvingSymlinksInPath)
+  }
+
+  func testDeveloperDirectoryEnvironmentTakesPrecedence() throws {
+    let directory = FileManager.default.temporaryDirectory
+      .appendingPathComponent(UUID().uuidString, isDirectory: true)
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
+    defer { try? FileManager.default.removeItem(at: directory) }
+
+    let resolved = try FBXcodeDirectory.resolveDeveloperDirectory(
+      environment: ["DEVELOPER_DIR": directory.path])
+
+    XCTAssertEqual(resolved, directory.path)
+  }
+
+  func testResolveWithoutEnvironmentRetainsLegacyPrecedence() throws {
+    let expected: String
+    do {
+      expected = try FBXcodeDirectory.symlinkedDeveloperDirectory()
+    } catch {
+      expected = try FBXcodeDirectory.xcodeSelectDeveloperDirectory()
+    }
+    let fallback = try FBXcodeDirectory.resolveDeveloperDirectory(environment: [:])
+
+    XCTAssertEqual(fallback, expected)
+  }
+
   func testXcodeSelect() throws {
     let directory = try FBXcodeDirectory.xcodeSelectDeveloperDirectory()
     assertDirectory(directory)

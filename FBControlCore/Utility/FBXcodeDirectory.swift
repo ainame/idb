@@ -12,6 +12,18 @@ public struct FBXcodeDirectory {
   // MARK: Public
 
   public static func resolveDeveloperDirectory() throws -> String {
+    try resolveDeveloperDirectory(environment: ProcessInfo.processInfo.environment)
+  }
+
+  static func resolveDeveloperDirectory(environment: [String: String]) throws -> String {
+    if let directory = environment["DEVELOPER_DIR"],
+      !directory.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    {
+      let resolved = (directory as NSString).resolvingSymlinksInPath
+      try validateXcodeDirectory(resolved)
+      return resolved
+    }
+
     let directory: String
     do {
       directory = try symlinkedDeveloperDirectory()
