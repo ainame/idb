@@ -84,7 +84,8 @@ public extension FBSimulatorHID {
   /// gesture intact before the connection is torn down while avoiding a per-primitive stall (e.g.
   /// slow typing on the DTUHID transport).
   func send(event: FBSimulatorHIDEvent, logger: FBControlCoreLogger) async throws {
-    for subEvent in event.subEvents ?? [event] {
+    let transportEvent = event.event(for: transportType)
+    for subEvent in transportEvent.subEvents ?? [transportEvent] {
       switch subEvent {
       case let .delay(duration):
         logger.log("Delay \(duration)s")
@@ -95,6 +96,113 @@ public extension FBSimulatorHID {
       }
     }
     try await flush()
+  }
+}
+
+// MARK: - Transport adaptation
+
+extension FBSimulatorHIDEvent {
+  private static let dtuhidApplePayInterPressDelay: TimeInterval = 0.15
+  private static let dtuhidKeyboardEventDelay: TimeInterval = 0.01
+  private static let dtuhidKeyboardSettleDelay: TimeInterval = 0.05
+
+  func event(for transportType: FBSimulatorHIDTransportType) -> FBSimulatorHIDEvent {
+    guard transportType == .dtuhid else {
+      return self
+    }
+
+    let transportEvent = addingDTUHIDKeyboardPacing(to: replacingApplePayPresses(in: self))
+    guard containsKeyboardEvent(transportEvent) else {
+      return transportEvent
+    }
+
+    return .composite([transportEvent, .delay(Self.dtuhidKeyboardSettleDelay)])
+  }
+
+  private func replacingApplePayPresses(in event: FBSimulatorHIDEvent) -> FBSimulatorHIDEvent {
+    guard case let .composite(events) = event else {
+      return event
+    }
+
+    var rewritten: [FBSimulatorHIDEvent] = []
+    var index = events.startIndex
+
+    while index < events.endIndex {
+      guard case .button(direction: .down, button: .applePay) = events[index],
+            let releaseIndex = events[index...].firstIndex(where: {
+              if case .button(direction: .up, button: .applePay) = $0 {
+                return true
+              }
+              return false
+            }),
+            events[events.index(after: index)..<releaseIndex].allSatisfy(isDurationOnly) else {
+        rewritten.append(replacingApplePayPresses(in: events[index]))
+        index = events.index(after: index)
+        continue
+      }
+
+      // The caller's hold duration is one command-level invariant, so each physical side-button
+      // press receives half of every duration-bearing delay instead of duplicating the duration.
+      let press = events[index...releaseIndex].map { applePayPressEvent(from: $0) }
+      rewritten.append(contentsOf: press)
+      rewritten.append(.delay(Self.dtuhidApplePayInterPressDelay))
+      rewritten.append(contentsOf: press)
+      index = events.index(after: releaseIndex)
+    }
+
+    return .composite(rewritten)
+  }
+
+  private func applePayPressEvent(from event: FBSimulatorHIDEvent) -> FBSimulatorHIDEvent {
+    switch event {
+    case let .button(direction, button) where button == .applePay:
+      return .button(direction: direction, button: .sideButton)
+    case let .delay(duration):
+      return .delay(duration / 2)
+    case let .composite(events):
+      return .composite(events.map { applePayPressEvent(from: $0) })
+    default:
+      return event
+    }
+  }
+
+  private func containsKeyboardEvent(_ event: FBSimulatorHIDEvent) -> Bool {
+    switch event {
+    case .keyboard:
+      return true
+    case let .composite(events):
+      return events.contains(where: containsKeyboardEvent)
+    default:
+      return false
+    }
+  }
+
+  private func isDurationOnly(_ event: FBSimulatorHIDEvent) -> Bool {
+    switch event {
+    case .delay:
+      return true
+    case let .composite(events):
+      return events.allSatisfy(isDurationOnly)
+    default:
+      return false
+    }
+  }
+
+  private func addingDTUHIDKeyboardPacing(to event: FBSimulatorHIDEvent) -> FBSimulatorHIDEvent {
+    if case .keyboard = event {
+      return .composite([event, .delay(Self.dtuhidKeyboardEventDelay)])
+    }
+    guard case let .composite(events) = event else {
+      return event
+    }
+
+    let pacedEvents = events.flatMap { event -> [FBSimulatorHIDEvent] in
+      if case .keyboard = event {
+        return [event, .delay(Self.dtuhidKeyboardEventDelay)]
+      }
+      return [addingDTUHIDKeyboardPacing(to: event)]
+    }
+    return .composite(pacedEvents)
   }
 }
 

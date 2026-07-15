@@ -309,3 +309,26 @@ targets:
       - target: IDBCompanionUtilities
         embed: true
       - sdk: Foundation.framework
+
+  FBSimulatorHIDEventTransportTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: FBSimulatorHIDEventTransportTests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.facebook.FBSimulatorHIDEventTransportTests
+        PRODUCT_NAME: FBSimulatorHIDEventTransportTests
+        GENERATE_INFOPLIST_FILE: YES
+    dependencies:
+      - target: FBSimulatorControl
+      - sdk: XCTest.framework
+
+schemes:
+  FBSimulatorControl:
+    build:
+      targets:
+        FBSimulatorControl: all
+    test:
+      targets:
+        - FBSimulatorHIDEventTransportTests
