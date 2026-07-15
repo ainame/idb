@@ -130,6 +130,7 @@ public final class FBAXTranslationDispatcher: NSObject, AXPTranslationTokenDeleg
       let box = AXPResponseBox()
 
       let xpcStart = CFAbsoluteTimeGetCurrent()
+      axRequest?.clientType = 2
       device?.sendAccessibilityRequestAsync(axRequest, completionQueue: callbackQueue) { innerResponse in
         box.response = innerResponse
         group.leave()
