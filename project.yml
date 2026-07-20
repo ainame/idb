@@ -127,6 +127,9 @@ targets:
         excludes:
           - "**/*-Info.plist"
           - "**/*.xcconfig"
+          - "Framebuffer/FBSimulatorVideoStream_Testing.h"
+      - path: FBSimulatorControl/Framebuffer/FBSimulatorVideoStream_Testing.h
+        headerVisibility: project
     settings:
       base:
         INFOPLIST_FILE: $(SRCROOT)/FBSimulatorControl/FBSimulatorControl-Info.plist
@@ -177,11 +180,14 @@ targets:
           - "**/*-Info.plist"
           - "**/*.xcconfig"
       - path: FBControlCoreTests/Templates
+      - path: Fixtures/Binaries/TableSearch.app
     settings:
       base:
         INFOPLIST_FILE: $(SRCROOT)/FBSimulatorControlTests/FBSimulatorControlTests-Info.plist
         PRODUCT_BUNDLE_IDENTIFIER: com.facebook.FBSimulatorControlTests
         PRODUCT_NAME: FBSimulatorControlTests
+        HEADER_SEARCH_PATHS: $(inherited) $(SRCROOT)/FBSimulatorControl/Framebuffer
+        SWIFT_OBJC_BRIDGING_HEADER: $(SRCROOT)/FBSimulatorControlTests/FBSimulatorControlTests-Bridging-Header.h
     dependencies:
       - target: FBControlCore
       - target: XCTestBootstrap

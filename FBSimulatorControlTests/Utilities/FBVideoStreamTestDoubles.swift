@@ -34,26 +34,33 @@ func createH264SampleBuffer() -> CMSampleBuffer {
   }
   precondition(status1 == noErr, "Failed to create H264 format description: \(status1)")
 
-  var avccData: [UInt8] = [
+  let avccData: [UInt8] = [
     0x00, 0x00, 0x00, 0x05,
     0x65, 0x88, 0x80, 0x40, 0x00,
   ]
 
   var blockBuf: CMBlockBuffer?
-  let status2 = avccData.withUnsafeMutableBufferPointer { ptr in
-    CMBlockBufferCreateWithMemoryBlock(
-      allocator: nil,
-      memoryBlock: ptr.baseAddress,
-      blockLength: ptr.count,
-      blockAllocator: kCFAllocatorNull,
-      customBlockSource: nil,
-      offsetToData: 0,
-      dataLength: ptr.count,
-      flags: 0,
-      blockBufferOut: &blockBuf
+  let status2 = CMBlockBufferCreateWithMemoryBlock(
+    allocator: nil,
+    memoryBlock: nil,
+    blockLength: avccData.count,
+    blockAllocator: kCFAllocatorDefault,
+    customBlockSource: nil,
+    offsetToData: 0,
+    dataLength: avccData.count,
+    flags: 0,
+    blockBufferOut: &blockBuf
+  )
+  precondition(status2 == noErr, "Failed to create block buffer: \(status2)")
+  let copyStatus = avccData.withUnsafeBytes { bytes in
+    CMBlockBufferReplaceDataBytes(
+      with: bytes.baseAddress!,
+      blockBuffer: blockBuf!,
+      offsetIntoDestination: 0,
+      dataLength: bytes.count
     )
   }
-  precondition(status2 == noErr, "Failed to create block buffer: \(status2)")
+  precondition(copyStatus == noErr, "Failed to copy sample data: \(copyStatus)")
 
   var sampleBuf: CMSampleBuffer?
   var sampleSize = avccData.count
@@ -104,26 +111,33 @@ func createNotReadySampleBuffer() -> CMSampleBuffer {
   }
   precondition(status1 == noErr, "Failed to create H264 format description: \(status1)")
 
-  var avccData: [UInt8] = [
+  let avccData: [UInt8] = [
     0x00, 0x00, 0x00, 0x05,
     0x65, 0x88, 0x80, 0x40, 0x00,
   ]
 
   var blockBuf: CMBlockBuffer?
-  let status2 = avccData.withUnsafeMutableBufferPointer { ptr in
-    CMBlockBufferCreateWithMemoryBlock(
-      allocator: nil,
-      memoryBlock: ptr.baseAddress,
-      blockLength: ptr.count,
-      blockAllocator: kCFAllocatorNull,
-      customBlockSource: nil,
-      offsetToData: 0,
-      dataLength: ptr.count,
-      flags: 0,
-      blockBufferOut: &blockBuf
+  let status2 = CMBlockBufferCreateWithMemoryBlock(
+    allocator: nil,
+    memoryBlock: nil,
+    blockLength: avccData.count,
+    blockAllocator: kCFAllocatorDefault,
+    customBlockSource: nil,
+    offsetToData: 0,
+    dataLength: avccData.count,
+    flags: 0,
+    blockBufferOut: &blockBuf
+  )
+  precondition(status2 == noErr, "Failed to create block buffer: \(status2)")
+  let copyStatus = avccData.withUnsafeBytes { bytes in
+    CMBlockBufferReplaceDataBytes(
+      with: bytes.baseAddress!,
+      blockBuffer: blockBuf!,
+      offsetIntoDestination: 0,
+      dataLength: bytes.count
     )
   }
-  precondition(status2 == noErr, "Failed to create block buffer: \(status2)")
+  precondition(copyStatus == noErr, "Failed to copy sample data: \(copyStatus)")
 
   var sampleBuf: CMSampleBuffer?
   var sampleSize = avccData.count

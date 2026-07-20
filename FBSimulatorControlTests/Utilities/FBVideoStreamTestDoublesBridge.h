@@ -11,11 +11,11 @@
 
 #import <FBControlCore/FBControlCore.h>
 #import <FBSimulatorControl/FBSimulatorControl.h>
+#import "FBSimulatorVideoStream_Testing.h"
 
 @class FBSimulatorConfiguration;
 @class FBSimulatorControlConfiguration;
 @class FBSimulatorSet;
-@class FBSimulatorVideoStreamFramePusher_VideoToolbox;
 
 NS_ASSUME_NONNULL_BEGIN
 

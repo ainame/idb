@@ -11,7 +11,7 @@
 
 #import <FBControlCore/FBControlCore.h>
 #import <FBSimulatorControl/FBSimulatorControl.h>
-#import <FBSimulatorControl/FBSimulatorVideoStream_Testing.h>
+#import "FBSimulatorVideoStream_Testing.h"
 
 #pragma mark - FBCapturingLogger
 

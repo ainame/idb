@@ -54,6 +54,10 @@ public final class FBSimulatorAccessibilityCommands: NSObject, AsyncAccessibilit
 
   private static let coreSimulatorBridgeServiceName = "com.apple.CoreSimulator.bridge"
 
+  static func requiresAccessibilityBootstrap(for runtimeVersion: OperatingSystemVersion) -> Bool {
+    runtimeVersion.majorVersion >= 27
+  }
+
   private weak var simulator: FBSimulator?
 
   /// Test injection seam: when set, overrides the simulator's shared dispatcher.
@@ -116,7 +120,7 @@ public final class FBSimulatorAccessibilityCommands: NSObject, AsyncAccessibilit
       throw FBAccessibilityError.accessibilityUnavailable
     }
     try FBSimulatorControlFrameworkLoader.accessibilityFrameworks.loadPrivateFrameworks(simulator.logger)
-    if FBXcodeConfiguration.xcodeVersion.majorVersion >= 27 {
+    if Self.requiresAccessibilityBootstrap(for: simulator.osVersion.version) {
       try FBSimulatorControlFrameworkLoader.bootstrapAccessibility(
         forSimulatorDevice: simulator.device,
         timeout: 5,
