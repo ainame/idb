@@ -125,7 +125,7 @@ public final class FBSimulatorAccessibilityCommands: NSObject, AsyncAccessibilit
     if Self.requiresAccessibilityBootstrap(for: simulator.osVersion.version) {
       let shouldBootstrap = bootstrapLock.withLock {
         guard let lastBootstrap else { return true }
-        return Date.timeIntervalSinceReferenceDate - lastBootstrap >= 5
+        return ProcessInfo.processInfo.systemUptime - lastBootstrap >= 5
       }
       if shouldBootstrap {
         try FBSimulatorControlFrameworkLoader.bootstrapAccessibility(
@@ -133,7 +133,7 @@ public final class FBSimulatorAccessibilityCommands: NSObject, AsyncAccessibilit
           timeout: 5,
           logger: simulator.logger
         )
-        bootstrapLock.withLock { lastBootstrap = Date.timeIntervalSinceReferenceDate }
+        bootstrapLock.withLock { lastBootstrap = ProcessInfo.processInfo.systemUptime }
       }
     }
   }
