@@ -59,6 +59,8 @@ public final class FBSimulatorAccessibilityCommands: NSObject, AsyncAccessibilit
   }
 
   private weak var simulator: FBSimulator?
+  private let bootstrapLock = NSLock()
+  private var lastBootstrap: TimeInterval?
 
   /// Test injection seam: when set, overrides the simulator's shared dispatcher.
   var injectedDispatcher: FBAXTranslationDispatcher?
@@ -121,11 +123,18 @@ public final class FBSimulatorAccessibilityCommands: NSObject, AsyncAccessibilit
     }
     try FBSimulatorControlFrameworkLoader.accessibilityFrameworks.loadPrivateFrameworks(simulator.logger)
     if Self.requiresAccessibilityBootstrap(for: simulator.osVersion.version) {
-      try FBSimulatorControlFrameworkLoader.bootstrapAccessibility(
-        forSimulatorDevice: simulator.device,
-        timeout: 5,
-        logger: simulator.logger
-      )
+      let shouldBootstrap = bootstrapLock.withLock {
+        guard let lastBootstrap else { return true }
+        return Date.timeIntervalSinceReferenceDate - lastBootstrap >= 5
+      }
+      if shouldBootstrap {
+        try FBSimulatorControlFrameworkLoader.bootstrapAccessibility(
+          forSimulatorDevice: simulator.device,
+          timeout: 5,
+          logger: simulator.logger
+        )
+        bootstrapLock.withLock { lastBootstrap = Date.timeIntervalSinceReferenceDate }
+      }
     }
   }
 
